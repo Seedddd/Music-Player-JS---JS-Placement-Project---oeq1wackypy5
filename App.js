@@ -1,147 +1,139 @@
-let now_playing = document.querySelector(".now-playing");
-let track_art = document.querySelector(".track-art");
-let track_name = document.querySelector(".track-name");
-let track_artist = document.querySelector(".track-artist");
+console.log("Music App");
 
-let playpause_btn = document.querySelector(".playpause-track");
-let next_btn = document.querySelector(".next-track");
-let prev_btn = document.querySelector(".prev-track");
+// Initialize the Variables
+let songIndex = 0;
+let audioElement = new Audio('songs/1.mp3');
+let masterPlay = document.getElementById('masterPlay');
+let myProgressBar = document.getElementById('myProgressBar');
+let gif = document.getElementById('gif');
+let masterSongName = document.getElementById('masterSongName');
+let songItems = Array.from(document.getElementsByClassName('songItem'));
+let songsCon = document.getElementById('songItemContainer');
 
-let seek_slider = document.querySelector(".seek_slider");
-let volume_slider = document.querySelector(".volume_slider");
-let curr_time = document.querySelector(".current-time");
-let total_duration = document.querySelector(".total-duration");
+let songs = [
+    {songName: "Fir se udd chala", filePath: "songs/1.mp3", coverPath: "covers/1.jpg",length:"5:02"},
+    {songName: "Dil chahta hai ", filePath: "songs/2.mp3", coverPath: "covers/2.jpg",length:"6:12"},
+    {songName: "Yarron Dosti badi hin ajib hai", filePath: "songs/3.mp3", coverPath: "covers/3.jpg",length:"4:21"},
+    {songName: "Jab koi baat bigar jae", filePath: "songs/4.mp3", coverPath: "covers/4.jpg",length:"4:01"},
+    {songName: "Tum hin aana ", filePath: "songs/5.mp3", coverPath: "covers/5.jpg",length:"5:51"},
+    {songName: "Teri mitti me mil jawa gul ban ke khil jawa", filePath: "songs/6.mp3", coverPath: "covers/6.jpg",length:"5:00"},
+    {songName: "Love you zindagi", filePath: "songs/7.mp3", coverPath: "covers/7.jpg",length:"6.05"},
+    {songName: "Tum hin hon ashiquie 2", filePath: "songs/8.mp3", coverPath: "covers/8.jpg",length:"6:22"},
+    {songName: "Bahati hawa tha vo ", filePath: "songs/9.mp3", coverPath: "covers/9.jpg",length:"5:42"},
+    {songName: "Dil hai Chhota sa choti", filePath: "songs/10.mp3", coverPath: "covers/10.jpg",length:"5:36"},
+]
 
-let track_index = 0;
-let isPlaying = false;
-let updateTimer;
+songsCon.innerHTML = songs.map((song,i)=>
+    `<div class="songItem"> 
+    <img src = ${song.coverPath} alt="1"> 
+    <span class="songName">${song.songName}</span>
+    <span class="songlistplay"><span class="timestamp">${song.length} <i id=${i} class="far songItemPlay fa-play-circle"></i> </span></span>
+    </div>`
+).join("");
+    
+ 
 
-// Create new audio element
-let curr_track = document.createElement('audio');
+// Handle play/pause click
+masterPlay.addEventListener('click', ()=>{
+    if(audioElement.paused || audioElement.currentTime<=0){
+        audioElement.play();
+        masterSongName.innerText = songs[songIndex].songName;
+        masterPlay.classList.remove('fa-play-circle');
+        masterPlay.classList.add('fa-pause-circle');
+        document.getElementById(songIndex).classList.remove('fa-play-circle');
+        document.getElementById(songIndex).classList.add('fa-pause-circle');
+        gif.style.opacity = 1;
+    }
+    else{
+        audioElement.pause();
+        masterPlay.classList.remove('fa-pause-circle');
+        masterPlay.classList.add('fa-play-circle');
+        document.getElementById(songIndex).classList.remove('fa-pause-circle');
+        document.getElementById(songIndex).classList.add('fa-play-circle');
+        gif.style.opacity = 0;
+    }
+})
+// Listen to Events
+audioElement.addEventListener('timeupdate', ()=>{ 
+    // Update Seekbar
+    progress = parseInt((audioElement.currentTime/audioElement.duration)* 100); 
+    myProgressBar.value = progress;
+})
 
-// Define the tracks that have to be played
-let track_list = [
-  {
-    name: "Night Owl",
-    artist: "Broke For Free",
-    image: "https://images.pexels.com/photos/2264753/pexels-photo-2264753.jpeg?auto=compress&cs=tinysrgb&dpr=3&h=250&w=250",
-    path: "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/WFMU/Broke_For_Free/Directionless_EP/Broke_For_Free_-_01_-_Night_Owl.mp3"
-  },
-  {
-    name: "Enthusiast",
-    artist: "Tours",
-    image: "https://images.pexels.com/photos/3100835/pexels-photo-3100835.jpeg?auto=compress&cs=tinysrgb&dpr=3&h=250&w=250",
-    path: "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.mp3"
-  },
-  {
-    name: "Shipping Lanes",
-    artist: "Chad Crouch",
-    image: "https://images.pexels.com/photos/1717969/pexels-photo-1717969.jpeg?auto=compress&cs=tinysrgb&dpr=3&h=250&w=250",
-    path: "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Shipping_Lanes.mp3",
-  },
-];
+myProgressBar.addEventListener('change', ()=>{
+    audioElement.currentTime = myProgressBar.value * audioElement.duration/100;
+})
 
-function random_bg_color() {
-
-  // Get a number between 64 to 256 (for getting lighter colors)
-  let red = Math.floor(Math.random() * 256) + 64;
-  let green = Math.floor(Math.random() * 256) + 64;
-  let blue = Math.floor(Math.random() * 256) + 64;
-
-  // Construct a color withe the given values
-  let bgColor = "rgb(" + red + "," + green + "," + blue + ")";
-
-  // Set the background to that color
-  document.body.style.background = bgColor;
+const makeAllPlays = ()=>{
+    Array.from(document.getElementsByClassName('songItemPlay')).forEach((element)=>{
+        element.classList.remove('fa-pause-circle');
+        element.classList.add('fa-play-circle');
+    })
 }
 
-function loadTrack(track_index) {
-  clearInterval(updateTimer);
-  resetValues();
-  curr_track.src = track_list[track_index].path;
-  curr_track.load();
+Array.from(document.getElementsByClassName('songItemPlay')).forEach((element)=>{
+    element.addEventListener('click', (e)=>{ 
+        makeAllPlays();
+        songIndex = parseInt(e.target.id);
+        if(audioElement.paused || audioElement.currentTime<=0){
+            masterSongName.innerText = songs[songIndex].songName;
+            audioElement.currentTime = 0;
+         //  audioElement.src = `songs/${songIndex+1}.mp3`;
+            audioElement.src = songs[songIndex].filePath;
+            audioElement.play();
+            gif.style.opacity = 1;
+            masterPlay.classList.remove('fa-play-circle');
+            masterPlay.classList.add('fa-pause-circle');
+            e.target.classList.remove('fa-play-circle');
+            e.target.classList.add('fa-pause-circle');
+            
+        }
+        else{
+            audioElement.pause();
+            gif.style.opacity = 0;
+            masterPlay.classList.remove('fa-pause-circle');
+            masterPlay.classList.add('fa-play-circle');
+            e.element.classList.remove('fa-pause-circle');
+            e.element.classList.add('fa-play-circle');
+            
+        }
+    })
+})
 
-  track_art.style.backgroundImage = "url(" + track_list[track_index].image + ")";
-  track_name.textContent = track_list[track_index].name;
-  track_artist.textContent = track_list[track_index].artist;
-  now_playing.textContent = "PLAYING " + (track_index + 1) + " OF " + track_list.length;
+document.getElementById('next').addEventListener('click', ()=>{
+    makeAllPlays();
+    if(songIndex>=9){
+        songIndex = 0
+    }
+    else{
+        songIndex += 1;
+    }
+   // audioElement.src = `songs/${songIndex+1}.mp3`;
+    audioElement.src = songs[songIndex].filePath;
+    masterSongName.innerText = songs[songIndex].songName;
+    audioElement.currentTime = 0;
+    audioElement.play();
+    masterPlay.classList.remove('fa-play-circle');
+    masterPlay.classList.add('fa-pause-circle');
+    document.getElementById(songIndex).classList.remove('fa-play-circle');
+    document.getElementById(songIndex).classList.add('fa-pause-circle');
 
-  updateTimer = setInterval(seekUpdate, 1000);
-  curr_track.addEventListener("ended", nextTrack);
-  random_bg_color();
-}
+})
 
-function resetValues() {
-  curr_time.textContent = "00:00";
-  total_duration.textContent = "00:00";
-  seek_slider.value = 0;
-}
-
-// Load the first track in the tracklist
-loadTrack(track_index);
-
-function playpauseTrack() {
-  if (!isPlaying) playTrack();
-  else pauseTrack();
-}
-
-function playTrack() {
-  curr_track.play();
-  isPlaying = true;
-  playpause_btn.innerHTML = '<i class="fa fa-pause-circle fa-5x"></i>';
-}
-
-function pauseTrack() {
-  curr_track.pause();
-  isPlaying = false;
-  playpause_btn.innerHTML = '<i class="fa fa-play-circle fa-5x"></i>';;
-}
-
-function nextTrack() {
-  if (track_index < track_list.length - 1)
-    track_index += 1;
-  else track_index = 0;
-  loadTrack(track_index);
-  playTrack();
-}
-
-function prevTrack() {
-  if (track_index > 0)
-    track_index -= 1;
-  else track_index = track_list.length;
-  loadTrack(track_index);
-  playTrack();
-}
-
-function seekTo() {
-  let seekto = curr_track.duration * (seek_slider.value / 100);
-  curr_track.currentTime = seekto;
-}
-
-function setVolume() {
-  curr_track.volume = volume_slider.value / 100;
-}
-
-function seekUpdate() {
-  let seekPosition = 0;
-
-  if (!isNaN(curr_track.duration)) {
-    seekPosition = curr_track.currentTime * (100 / curr_track.duration);
-
-    seek_slider.value = seekPosition;
-
-    let currentMinutes = Math.floor(curr_track.currentTime / 60);
-    let currentSeconds = Math.floor(curr_track.currentTime - currentMinutes * 60);
-    let durationMinutes = Math.floor(curr_track.duration / 60);
-    let durationSeconds = Math.floor(curr_track.duration - durationMinutes * 60);
-
-    if (currentSeconds < 10) { currentSeconds = "0" + currentSeconds; }
-    if (durationSeconds < 10) { durationSeconds = "0" + durationSeconds; }
-    if (currentMinutes < 10) { currentMinutes = "0" + currentMinutes; }
-    if (durationMinutes < 10) { durationMinutes = "0" + durationMinutes; }
-
-    curr_time.textContent = currentMinutes + ":" + currentSeconds;
-    total_duration.textContent = durationMinutes + ":" + durationSeconds;
-  }
-}
-
+document.getElementById('previous').addEventListener('click', ()=>{
+    makeAllPlays();
+    if(songIndex<=0){
+        songIndex = 0
+    }
+    else{
+        songIndex -= 1;
+    }
+    audioElement.src = `songs/${songIndex+1}.mp3`;
+    masterSongName.innerText = songs[songIndex].songName;
+    audioElement.currentTime = 0;
+    audioElement.play();
+    masterPlay.classList.remove('fa-play-circle');
+    masterPlay.classList.add('fa-pause-circle');
+    document.getElementById(songIndex).classList.remove('fa-play-circle');
+    document.getElementById(songIndex).classList.add('fa-pause-circle');
+})
