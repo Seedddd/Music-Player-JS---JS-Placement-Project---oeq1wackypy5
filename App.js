@@ -1,139 +1,368 @@
-console.log("Music App");
+const url = `https://api.napster.com/v2.1/tracks/top?apikey=MzE2OWNmYmYtMDhiMS00MmY3LWE3ZmQtYjI0MjA5OTRlOGI2`;
+const music = document.getElementById('music');
+const masterPlayButton = document.getElementById('masterPlay');
+const songItem = Array.from(document.getElementsByClassName('songName'));
+const container = document.getElementById('container');
+const seekBar = document.getElementById('rangeBar');
+const forwardBtn = document.getElementById('forward');
+const backwardBtn = document.getElementById('backward');
+const timeStamp = document.getElementById('timeStamp');
+const masterSongName = document.getElementById('masterSongName');
+const queueBtn = document.getElementById('Queue');
+const queueContainer = document.getElementById('queueContainer');
+const shuffle = document.getElementById('shuffle');
+const search = document.getElementById('search');
+const searchBar = document.getElementById('searchBar');
 
-// Initialize the Variables
-let songIndex = 0;
-let audioElement = new Audio('songs/1.mp3');
-let masterPlay = document.getElementById('masterPlay');
-let myProgressBar = document.getElementById('myProgressBar');
-let gif = document.getElementById('gif');
-let masterSongName = document.getElementById('masterSongName');
-let songItems = Array.from(document.getElementsByClassName('songItem'));
-let songsCon = document.getElementById('songItemContainer');
+const next = document.getElementById('next');
+const previous = document.getElementById('previous');
+// console.log(songItem)
 
-let songs = [
-    {songName: "Fir se udd chala", filePath: "songs/1.mp3", coverPath: "covers/1.jpg",length:"5:02"},
-    {songName: "Dil chahta hai ", filePath: "songs/2.mp3", coverPath: "covers/2.jpg",length:"6:12"},
-    {songName: "Yarron Dosti badi hin ajib hai", filePath: "songs/3.mp3", coverPath: "covers/3.jpg",length:"4:21"},
-    {songName: "Jab koi baat bigar jae", filePath: "songs/4.mp3", coverPath: "covers/4.jpg",length:"4:01"},
-    {songName: "Tum hin aana ", filePath: "songs/5.mp3", coverPath: "covers/5.jpg",length:"5:51"},
-    {songName: "Teri mitti me mil jawa gul ban ke khil jawa", filePath: "songs/6.mp3", coverPath: "covers/6.jpg",length:"5:00"},
-    {songName: "Love you zindagi", filePath: "songs/7.mp3", coverPath: "covers/7.jpg",length:"6.05"},
-    {songName: "Tum hin hon ashiquie 2", filePath: "songs/8.mp3", coverPath: "covers/8.jpg",length:"6:22"},
-    {songName: "Bahati hawa tha vo ", filePath: "songs/9.mp3", coverPath: "covers/9.jpg",length:"5:42"},
-    {songName: "Dil hai Chhota sa choti", filePath: "songs/10.mp3", coverPath: "covers/10.jpg",length:"5:36"},
-]
-
-songsCon.innerHTML = songs.map((song,i)=>
-    `<div class="songItem"> 
-    <img src = ${song.coverPath} alt="1"> 
-    <span class="songName">${song.songName}</span>
-    <span class="songlistplay"><span class="timestamp">${song.length} <i id=${i} class="far songItemPlay fa-play-circle"></i> </span></span>
-    </div>`
-).join("");
-    
- 
-
-// Handle play/pause click
-masterPlay.addEventListener('click', ()=>{
-    if(audioElement.paused || audioElement.currentTime<=0){
-        audioElement.play();
-        masterSongName.innerText = songs[songIndex].songName;
-        masterPlay.classList.remove('fa-play-circle');
-        masterPlay.classList.add('fa-pause-circle');
-        document.getElementById(songIndex).classList.remove('fa-play-circle');
-        document.getElementById(songIndex).classList.add('fa-pause-circle');
-        gif.style.opacity = 1;
+// Bottom Play Button
+masterPlayButton.addEventListener('click', () => {
+    if (music.paused || music.currentTime <= 0) {
+        music.play();
+        masterPlayButton.classList.remove('fa-circle-play');
+        masterPlayButton.classList.add('fa-circle-pause');
+        masterSongName.innerText = 'Line Without a Hook';
+    } else {
+        music.pause();
+        masterPlayButton.classList.add('fa-circle-play');
+        masterPlayButton.classList.remove('fa-circle-pause');
     }
-    else{
-        audioElement.pause();
-        masterPlay.classList.remove('fa-pause-circle');
-        masterPlay.classList.add('fa-play-circle');
-        document.getElementById(songIndex).classList.remove('fa-pause-circle');
-        document.getElementById(songIndex).classList.add('fa-play-circle');
-        gif.style.opacity = 0;
+});
+let namesArr = [];
+// Api data and playing from container
+const musicData = async () => {
+    const response = await fetch(url);
+    const data = await response.json();
+    const list = data.tracks;
+
+    const element = list.map(item => {
+        // console.log(item);
+        const htmlData = `
+        <div class="songList">
+            <p class="songName" data-preview-url="${item.previewURL}" name="${item.name}" >${item.name}</p>
+        </div>`;
+        return htmlData;
+    }).join('');
+
+    container.insertAdjacentHTML('beforeend', element);
+    songNames = document.querySelectorAll('.songName');
+    // console.log(songNames);
+    songNames.forEach(name => {
+        const nameAttr = name.getAttribute('name');
+
+        name.addEventListener('click', () => {
+            const previewUrl = name.getAttribute('data-preview-url');
+            music.src = previewUrl;
+            music.play();
+            masterSongName.innerText = nameAttr;
+            masterPlayButton.classList.remove('fa-circle-play');
+            masterPlayButton.classList.add('fa-circle-pause');
+        });
+        namesArr.push(nameAttr);
+    });
+    // console.log(namesArr);
+    const searchResults = document.getElementById('search-results');
+
+    search.addEventListener('click', () => {
+        searchBar.style.display = 'block';
+    });
+
+    searchBar.addEventListener('input', () => {
+        const searchTerm = searchBar.value.toLowerCase();
+        const filteredResults = namesArr.filter(name => name.toLowerCase().includes(searchTerm));
+
+        searchResults.innerHTML = ''; // Clear previous search results
+        filteredResults.forEach(name => {
+            const resultElement = document.createElement('div');
+            resultElement.innerText = name;
+            searchResults.appendChild(resultElement);
+        });
+    });
+
+    // showing search div when search focus
+    searchBar.addEventListener('focus', () => {
+        searchResults.style.display = 'block';
+    });
+
+    // hiding search div when search focus
+    searchBar.addEventListener('blur', () => {
+        searchResults.style.display = 'none';
+    });
+
+
+
+
+
+
+};
+
+musicData();
+
+// seekBar Update and time update also the variable 
+seekBar.addEventListener('input', () => {
+    music.currentTime = (seekBar.value / 100) * music.duration;
+});
+
+
+
+music.addEventListener('timeupdate', () => {
+    let progress = parseInt((music.currentTime / music.duration) * 100);
+    seekBar.value = progress;
+    let currentMinutes = Math.floor(music.currentTime / 60);
+    let currentSeconds = Math.floor(music.currentTime % 60);
+    let totalMinutes = Math.floor(music.duration / 60);
+    let totalSeconds = Math.floor(music.duration % 60);
+    timeStamp.innerText = `${currentMinutes}:${currentSeconds} / ${totalMinutes}:${totalSeconds}`;
+});
+
+// music.addEventListener('ended',()=>{
+//     masterPlayButton.classList.remove('fa-circle-pause');
+//     masterPlayButton.classList.add('fa-circle-play');
+// })
+
+// forward 5sec
+forwardBtn.addEventListener('click', () => {
+    music.currentTime += 5;
+});
+
+// backward 5 sec
+backwardBtn.addEventListener('click', () => {
+    music.currentTime -= 5;
+});
+
+// Keep track of current song index
+let currentSongIndex = 0;
+
+// Set up event listeners for next and previous buttons
+next.addEventListener('click', () => {
+    // Increment current song index
+    currentSongIndex++;
+
+    // If current song index is greater than or equal to the length of the song names array, set it to 0
+    if (currentSongIndex >= namesArr.length) {
+        currentSongIndex = 0;
     }
-})
-// Listen to Events
-audioElement.addEventListener('timeupdate', ()=>{ 
-    // Update Seekbar
-    progress = parseInt((audioElement.currentTime/audioElement.duration)* 100); 
-    myProgressBar.value = progress;
-})
 
-myProgressBar.addEventListener('change', ()=>{
-    audioElement.currentTime = myProgressBar.value * audioElement.duration/100;
-})
+    // Get preview URL for current song
+    const previewUrl = songNames[currentSongIndex].getAttribute('data-preview-url');
 
-const makeAllPlays = ()=>{
-    Array.from(document.getElementsByClassName('songItemPlay')).forEach((element)=>{
-        element.classList.remove('fa-pause-circle');
-        element.classList.add('fa-play-circle');
-    })
+    // Update music source and play music
+    music.src = previewUrl;
+    music.play();
+    masterSongName.innerText = songNames[currentSongIndex].getAttribute('name');
+});
+
+previous.addEventListener('click', () => {
+    // Decrement current song index
+    currentSongIndex--;
+
+    // If current song index is less than 0, set it to the last index in the song names array
+    if (currentSongIndex < 0) {
+        currentSongIndex = namesArr.length - 1;
+    }
+
+    // Get preview URL for current song
+    const previewUrl = songNames[currentSongIndex].getAttribute('data-preview-url');
+
+    // Update music source and play music
+    music.src = previewUrl;
+    music.play();
+    masterSongName.innerText = songNames[currentSongIndex].getAttribute('name');
+});
+
+
+
+function addToQueue() {
+    const currentSongName = masterSongName.innerText;
+    const currentPreviewUrl = music.src;
+    // Add the current song to the queue
+    const html = `
+  <div class="queuedSong">
+    <p class="queuedSongName">${currentSongName}</p>
+    <audio src="${currentPreviewUrl}" class="queuedSongAudio"></audio>
+  </div>
+`;
+    queueContainer.insertAdjacentHTML('beforeend', html);
+
+    // Check if shuffle is enabled
+    if (shuffle.checked) {
+        // Shuffle the queue
+        shuffleQueue();
+    }
 }
 
-Array.from(document.getElementsByClassName('songItemPlay')).forEach((element)=>{
-    element.addEventListener('click', (e)=>{ 
-        makeAllPlays();
-        songIndex = parseInt(e.target.id);
-        if(audioElement.paused || audioElement.currentTime<=0){
-            masterSongName.innerText = songs[songIndex].songName;
-            audioElement.currentTime = 0;
-         //  audioElement.src = `songs/${songIndex+1}.mp3`;
-            audioElement.src = songs[songIndex].filePath;
-            audioElement.play();
-            gif.style.opacity = 1;
-            masterPlay.classList.remove('fa-play-circle');
-            masterPlay.classList.add('fa-pause-circle');
-            e.target.classList.remove('fa-play-circle');
-            e.target.classList.add('fa-pause-circle');
-            
+function shuffleQueue() {
+    // Get all the queuedSong elements and their audio elements
+    const queueDiv = Array.from(document.querySelectorAll('.queuedSong'));
+    const queueDivAudio = Array.from(document.querySelectorAll('.queuedSong audio'));
+    // Randomize the order of the elements using the Fisher-Yates shuffle algorithm
+    for (let i = queueDiv.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [queueDiv[i], queueDiv[j]] = [queueDiv[j], queueDiv[i]];
+        [queueDivAudio[i], queueDivAudio[j]] = [queueDivAudio[j], queueDivAudio[i]];
+    }
+    // Clear the queueContainer
+    queueContainer.innerHTML = '';
+    // Append the elements to the queueContainer in the new randomized order
+    queueDiv.forEach((queuedSong, index) => {
+        queueContainer.appendChild(queuedSong);
+    });
+}
+
+
+shuffle.addEventListener('click', () => {
+    shuffleQueue();
+});
+
+
+
+// let queue = []
+
+const playQueue = () => {
+    const queueDiv = Array.from(document.querySelectorAll('.queuedSong'));
+    const queueDivAudio = Array.from(document.querySelectorAll('.queuedSong audio'));
+    const queDivText = Array.from(document.querySelectorAll('.queuedSong p'));
+    const textQueue = queDivText.map(queuedSongName => queuedSongName.innerText);
+
+    // shuffle the queue
+    const shuffleQueue = (queue) => {
+        for (let i = queue.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [queue[i], queue[j]] = [queue[j], queue[i]];
         }
-        else{
-            audioElement.pause();
-            gif.style.opacity = 0;
-            masterPlay.classList.remove('fa-pause-circle');
-            masterPlay.classList.add('fa-play-circle');
-            e.element.classList.remove('fa-pause-circle');
-            e.element.classList.add('fa-play-circle');
-            
-        }
-    })
-})
+        return queue;
+    };
+    // queue div music play
+    queueDiv.forEach((queuedSong, index) => {
+        queuedSong.addEventListener('click', () => {
+            music.src = queueDivAudio[index].src;
+            music.play();
+            masterSongName.innerText = textQueue[index];
+            masterPlayButton.classList.remove('fa-circle-play');
+            masterPlayButton.classList.add('fa-circle-pause');
 
-document.getElementById('next').addEventListener('click', ()=>{
-    makeAllPlays();
-    if(songIndex>=9){
-        songIndex = 0
-    }
-    else{
-        songIndex += 1;
-    }
-   // audioElement.src = `songs/${songIndex+1}.mp3`;
-    audioElement.src = songs[songIndex].filePath;
-    masterSongName.innerText = songs[songIndex].songName;
-    audioElement.currentTime = 0;
-    audioElement.play();
-    masterPlay.classList.remove('fa-play-circle');
-    masterPlay.classList.add('fa-pause-circle');
-    document.getElementById(songIndex).classList.remove('fa-play-circle');
-    document.getElementById(songIndex).classList.add('fa-pause-circle');
+            // Play next song in queue when current song ends
+            music.addEventListener('ended', () => {
+                // get the shuffled queue
+                const shuffledQueue = shuffleQueue(queueDivAudio);
+                const shuffledQueueText = shuffleQueue(textQueue);
+                // find the current index in the shuffled queue
+                const currentIndex = shuffledQueue.findIndex((song) => song.src === music.src);
+                if (currentIndex + 1 < shuffledQueue.length) {
+                    // Play next song in queue
+                    masterSongName.innerText = shuffledQueueText[currentIndex + 1];
+                    music.src = shuffledQueue[currentIndex + 1].src;
+                    music.play();
+                }
+            });
+        });
+    });
+};
 
-})
 
-document.getElementById('previous').addEventListener('click', ()=>{
-    makeAllPlays();
-    if(songIndex<=0){
-        songIndex = 0
+
+// queue div show hide
+
+queueBtn.addEventListener('click', () => {
+    console.log('clicked');
+    queueContainer.classList.toggle('show');
+    container.classList.toggle('hide');
+
+    playQueue();
+});
+
+
+// search bar
+
+
+
+
+
+// playliist implementation
+const playlistAdd = document.querySelector('.playlistAdd');
+
+playlistAdd.addEventListener('click', () => {
+    // Get the current playing music
+    const currentMusic = {
+        name: masterSongName.innerText,
+        url: music.src
+    };
+
+    // Check if there are any items in the playlist
+    if (localStorage.getItem('playlist')) {
+        // If there are, get the playlist array
+        let playlist = JSON.parse(localStorage.getItem('playlist'));
+        // Add the current music to the playlist array
+        playlist.push(currentMusic);
+        // Save the updated playlist array to local storage
+        localStorage.setItem('playlist', JSON.stringify(playlist));
+    } else {
+        // If there are no items in the playlist, create a new array with the current music
+        let playlist = [currentMusic];
+        // Save the new playlist array to local storage
+        localStorage.setItem('playlist', JSON.stringify(playlist));
     }
-    else{
-        songIndex -= 1;
-    }
-    audioElement.src = `songs/${songIndex+1}.mp3`;
-    masterSongName.innerText = songs[songIndex].songName;
-    audioElement.currentTime = 0;
-    audioElement.play();
-    masterPlay.classList.remove('fa-play-circle');
-    masterPlay.classList.add('fa-pause-circle');
-    document.getElementById(songIndex).classList.remove('fa-play-circle');
-    document.getElementById(songIndex).classList.add('fa-pause-circle');
-})
+    showPlaylist();
+});
+
+
+const playLists = document.getElementById('playLists');
+const playlistDiv = document.getElementById('playlistDiv');
+const searchPlaylist = document.getElementById('searcIconPlaylist');
+const searchPlaylistInput = document.getElementById('searchPlaylistInput');
+
+playLists.addEventListener('click', () => {
+    playlistDiv.classList.toggle('show');
+});
+
+
+const showPlaylist = () => {
+    const storedItems = localStorage.getItem('playlist');
+    // Get the items from local storage
+    playlistDiv.innerText = '';
+
+    // parse items into an array
+    const playlistArr = JSON.parse(storedItems);
+
+
+
+    const playlistElements = playlistArr.map(item => {
+        // console.log(item);
+        return `<div>${item.name}</div>`;
+    }).join('');
+
+    // add the elements to the playlistDiv
+    playlistDiv.insertAdjacentHTML('beforeend', playlistElements);
+
+};
+
+//  search playlist
+searchPlaylist.addEventListener('click', () => {
+    searchPlaylistInput.style.display = 'block';
+
+});
+
+
+searchPlaylistInput.addEventListener('input', () => {
+    // Get search term from searchPlaylistInput element
+    const searchTerm = searchPlaylistInput.value.toLowerCase();
+
+    // Retrieve playlist array from local storage
+    const playlist = JSON.parse(localStorage.getItem('playlist'));
+
+    // Filter playlist array for names that include search term
+    const filteredResults = playlist.filter(item => item.name.toLowerCase().includes(searchTerm));
+
+    // Clear previous search results
+    playlistDiv.innerHTML = '';
+
+    // Display filtered results in searchDiv
+    filteredResults.forEach(item => {
+        const resultElement = document.createElement('div');
+        resultElement.innerText = item.name;
+        document.getElementById('playlistDiv').appendChild(resultElement);
+    });
+});
